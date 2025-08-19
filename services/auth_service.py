@@ -121,3 +121,4 @@ class AuthService:
             return UserResponse(id=user['id'], username=user['username'], email=user['email'])
         finally:
             await conn.close()
+

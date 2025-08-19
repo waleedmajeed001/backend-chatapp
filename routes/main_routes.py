@@ -11,3 +11,5 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "message": "API is running successfully"}
+
+

@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from database.connection import init_db
 from routes.auth_routes import router as auth_router
 from routes.main_routes import router as main_router
+from routes.chat_routes import router as chat_router
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +24,7 @@ app.add_middleware(
 # Include routers
 app.include_router(main_router)
 app.include_router(auth_router)
+app.include_router(chat_router)
 
 # Startup event
 @app.on_event("startup")
@@ -33,3 +35,5 @@ async def startup_event():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+

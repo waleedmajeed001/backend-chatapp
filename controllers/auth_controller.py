@@ -23,3 +23,5 @@ class AuthController:
         token = credentials.credentials
         email = AuthService.verify_token(token)
         return await AuthService.get_user_by_email(email)
+
+

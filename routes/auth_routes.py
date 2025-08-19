@@ -18,3 +18,5 @@ async def login(user_data: UserLogin):
 async def get_current_user_info(current_user: UserResponse = Depends(AuthController.get_current_user)):
     """Get current user information (protected endpoint)"""
     return current_user
+
+

@@ -83,3 +83,5 @@ To add new functionality:
 5. **Include new routers** in `app.py`
 
 This structure makes it easy to maintain clean, organized code as your application grows.
+
+
