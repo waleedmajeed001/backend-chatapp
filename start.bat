@@ -9,5 +9,5 @@ echo.
 echo Starting server on http://localhost:8000
 echo Press Ctrl+C to stop the server
 echo.
-python main.py
+python app.py
 pause
