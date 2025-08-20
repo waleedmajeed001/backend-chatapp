@@ -33,7 +33,7 @@ async def init_db():
 			)
 		""")
 		
-		# Create messages table (public messages)
+		# Create messages table
 		await conn.execute("""
 			CREATE TABLE IF NOT EXISTS messages (
 				id SERIAL PRIMARY KEY,
@@ -43,56 +43,13 @@ async def init_db():
 			)
 		""")
 		
-		# Create private conversations table
-		await conn.execute("""
-			CREATE TABLE IF NOT EXISTS private_conversations (
-				id SERIAL PRIMARY KEY,
-				user1_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-				user2_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				UNIQUE(user1_id, user2_id),
-				CHECK(user1_id != user2_id)
-			)
-		""")
-		
-		# Create private messages table
-		await conn.execute("""
-			CREATE TABLE IF NOT EXISTS private_messages (
-				id SERIAL PRIMARY KEY,
-				conversation_id INTEGER NOT NULL REFERENCES private_conversations(id) ON DELETE CASCADE,
-				sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-				content TEXT NOT NULL,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-			)
-		""")
-		
-		# Create indexes for better query performance
+		# Create index for better query performance
 		await conn.execute("""
 			CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC)
 		""")
 		
 		await conn.execute("""
 			CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)
-		""")
-		
-		await conn.execute("""
-			CREATE INDEX IF NOT EXISTS idx_private_messages_conversation_id ON private_messages(conversation_id)
-		""")
-		
-		await conn.execute("""
-			CREATE INDEX IF NOT EXISTS idx_private_messages_created_at ON private_messages(created_at DESC)
-		""")
-		
-		await conn.execute("""
-			CREATE INDEX IF NOT EXISTS idx_private_messages_sender_id ON private_messages(sender_id)
-		""")
-		
-		await conn.execute("""
-			CREATE INDEX IF NOT EXISTS idx_private_conversations_user1_id ON private_conversations(user1_id)
-		""")
-		
-		await conn.execute("""
-			CREATE INDEX IF NOT EXISTS idx_private_conversations_user2_id ON private_conversations(user2_id)
 		""")
 	finally:
 		await conn.close()

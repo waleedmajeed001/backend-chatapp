@@ -123,21 +123,6 @@ class AuthService:
             await conn.close()
 
     @staticmethod
-    async def get_user_by_id(user_id: int) -> Optional[UserResponse]:
-        """Get user by ID"""
-        conn = await get_db_connection()
-        try:
-            user = await conn.fetchrow(
-                "SELECT id, username, email FROM users WHERE id = $1",
-                user_id
-            )
-            if not user:
-                return None
-            return UserResponse(id=user['id'], username=user['username'], email=user['email'])
-        finally:
-            await conn.close()
-
-    @staticmethod
     async def get_all_users() -> list[UserResponse]:
         """Get all registered users"""
         conn = await get_db_connection()
