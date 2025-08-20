@@ -22,6 +22,7 @@ async def get_db_connection():
 async def init_db():
 	conn = await get_db_connection()
 	try:
+		# Create users table
 		await conn.execute("""
 			CREATE TABLE IF NOT EXISTS users (
 				id SERIAL PRIMARY KEY,
@@ -30,6 +31,25 @@ async def init_db():
 				password_hash VARCHAR(255) NOT NULL,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			)
+		""")
+		
+		# Create messages table
+		await conn.execute("""
+			CREATE TABLE IF NOT EXISTS messages (
+				id SERIAL PRIMARY KEY,
+				content TEXT NOT NULL,
+				user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)
+		""")
+		
+		# Create index for better query performance
+		await conn.execute("""
+			CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC)
+		""")
+		
+		await conn.execute("""
+			CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)
 		""")
 	finally:
 		await conn.close()

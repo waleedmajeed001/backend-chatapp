@@ -1,6 +1,8 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from typing import Dict, List, Any
 from services.auth_service import AuthService
+from services.message_service import MessageService
+from models.message import MessageCreate
 
 
 router = APIRouter(prefix="", tags=["Chat"])
@@ -11,7 +13,6 @@ class ConnectionManager:
     self.active_connections: List[WebSocket] = []
     self.websocket_to_user: Dict[WebSocket, Dict[str, Any]] = {}
     self.online_users: Dict[str, Dict[str, Any]] = {}
-    self.message_history: List[Dict[str, Any]] = []
 
   async def connect(self, websocket: WebSocket, user: Dict[str, Any]) -> None:
     await websocket.accept()
@@ -47,10 +48,6 @@ class ConnectionManager:
     await self.broadcast(json.dumps(payload))
 
   async def add_and_broadcast_message(self, message: Dict[str, Any]) -> None:
-    self.message_history.append(message)
-    # Limit history size to avoid unbounded growth
-    if len(self.message_history) > 500:
-      self.message_history = self.message_history[-500:]
     import json
     await self.broadcast(json.dumps({"type": "message", "data": message}))
 
@@ -82,20 +79,34 @@ async def websocket_endpoint(websocket: WebSocket):
   # Send initial state: recent messages and online users
   try:
     import json
+    # Get recent messages from database
+    recent_messages = await MessageService.get_recent_messages(50)
+    messages_data = [{
+      "id": msg.id,
+      "user": {"id": msg.user_id, "username": msg.username, "email": msg.email},
+      "content": msg.content,
+      "created_at": msg.created_at.isoformat() + "Z"
+    } for msg in recent_messages]
+    
     await websocket.send_text(json.dumps({"type": "boot", "data": {
-      "messages": manager.message_history[-50:],
+      "messages": messages_data,
       "online_users": list(manager.online_users.values()),
     }}))
 
     while True:
       text = await websocket.receive_text()
-      # Normalize incoming text and broadcast
-      message = {
-        "user": {"id": user["id"], "username": user["username"], "email": user["email"]},
-        "content": text.strip(),
-        "created_at": __import__("datetime").datetime.utcnow().isoformat() + "Z",
-      }
-      if message["content"]:
+      if text.strip():
+        # Save message to database
+        message_create = MessageCreate(content=text.strip(), user_id=user["id"])
+        saved_message = await MessageService.create_message(message_create)
+        
+        # Prepare message for broadcasting
+        message = {
+          "id": saved_message.id,
+          "user": {"id": saved_message.user_id, "username": saved_message.username, "email": saved_message.email},
+          "content": saved_message.content,
+          "created_at": saved_message.created_at.isoformat() + "Z",
+        }
         await manager.add_and_broadcast_message(message)
   except WebSocketDisconnect:
     manager.disconnect(websocket)
@@ -117,6 +128,26 @@ async def get_recent_messages(limit: int = 50):
     limit = 1
   if limit > 200:
     limit = 200
-  return manager.message_history[-limit:]
+  messages = await MessageService.get_recent_messages(limit)
+  return [{
+    "id": msg.id,
+    "user": {"id": msg.user_id, "username": msg.username, "email": msg.email},
+    "content": msg.content,
+    "created_at": msg.created_at.isoformat() + "Z"
+  } for msg in messages]
+
+@router.get("/messages/user/{user_id}")
+async def get_messages_by_user(user_id: int, limit: int = 50):
+  if limit <= 0:
+    limit = 1
+  if limit > 200:
+    limit = 200
+  messages = await MessageService.get_messages_by_user(user_id, limit)
+  return [{
+    "id": msg.id,
+    "user": {"id": msg.user_id, "username": msg.username, "email": msg.email},
+    "content": msg.content,
+    "created_at": msg.created_at.isoformat() + "Z"
+  } for msg in messages]
 
 
