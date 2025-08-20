@@ -6,3 +6,5 @@ passlib
 asyncpg
 python-dotenv
 pydantic
+websockets
+aiohttp

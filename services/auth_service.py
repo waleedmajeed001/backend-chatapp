@@ -122,3 +122,52 @@ class AuthService:
         finally:
             await conn.close()
 
+    @staticmethod
+    async def get_user_by_id(user_id: int) -> Optional[UserResponse]:
+        """Get user by ID"""
+        conn = await get_db_connection()
+        try:
+            user = await conn.fetchrow(
+                "SELECT id, username, email FROM users WHERE id = $1",
+                user_id
+            )
+            if not user:
+                return None
+            return UserResponse(id=user['id'], username=user['username'], email=user['email'])
+        finally:
+            await conn.close()
+
+    @staticmethod
+    async def get_all_users() -> list[UserResponse]:
+        """Get all registered users"""
+        conn = await get_db_connection()
+        try:
+            users = await conn.fetch(
+                "SELECT id, username, email FROM users ORDER BY username"
+            )
+            return [
+                UserResponse(id=user['id'], username=user['username'], email=user['email'])
+                for user in users
+            ]
+        finally:
+            await conn.close()
+
+    @staticmethod
+    async def register_user(user_data: UserCreate) -> Token:
+        """Register a new user and return access token"""
+        # Create user
+        user = await AuthService.create_user(user_data)
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = AuthService.create_access_token(
+            data={"sub": user.email}, expires_delta=access_token_expires
+        )
+        
+        return Token(access_token=access_token, token_type="bearer")
+
+    @staticmethod
+    async def login_user(user_data: UserLogin) -> Token:
+        """Login user and return access token"""
+        return await AuthService.authenticate_user(user_data)
+
