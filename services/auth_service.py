@@ -3,7 +3,7 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import os
 from typing import Optional
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends, Header
 from database.connection import get_db_connection
 from models.user import UserCreate, UserLogin, UserResponse, Token
 
@@ -155,4 +155,11 @@ class AuthService:
     async def login_user(user_data: UserLogin) -> Token:
         """Login user and return access token"""
         return await AuthService.authenticate_user(user_data)
+
+    @staticmethod
+    async def get_current_user_token(authorization: str = Header(...)) -> str:
+        """Extract token from Authorization header"""
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid authorization header")
+        return authorization.replace("Bearer ", "")
 
